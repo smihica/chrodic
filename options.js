@@ -89,55 +89,122 @@ document.querySelector('#eijiro_file').onchange = function(e) {
     });
 };
 
+var Anki = (function createAnki() {
+  var self = {
+    fields: [{name: 'note_type', default: 'Basic'},
+             {name: 'deck', default: 'Default'}],
+    init: function() {
+      window.addEventListener('load', self.onLoad);
+      return self;
+    },
+    updateElements: function() {
+      var useAnki = (localStorage['use_anki'] != undefined);
+      document.getElementById('use_anki').checked = useAnki;
 
-var fields = [{name: 'note_type', default: 'Basic'},
-              {name: 'deck', default: 'Default'}];
-
-function updateElements() {
-  var useAnki = (localStorage['use_anki'] != undefined);
-  document.getElementById('use_anki').checked = useAnki;
-
-  fields.forEach(function(field) {
-    var element = document.getElementById(field.name);
-    element.value = localStorage[field.name];
-    element.disabled = !useAnki;
-  });
-}
-
-function readValues() {
-  var element = document.getElementById('use_anki');
-  if (element.checked) {
-    localStorage['use_anki'] = true;
-  } else {
-    delete localStorage['use_anki'];
-  }
-  fields.forEach(function(field) {
-    localStorage[field.name] = document.getElementById(field.name).value;
-  });
-}
-
-function onChange() {
-  readValues();
-  updateElements();
-}
-
-window.addEventListener('load', function() {
-  // Set default values.
-  fields.forEach(function(field) {
-    if (localStorage[field.name] == undefined) {
-      localStorage[field.name] = field.default;
+      self.fields.forEach(function(field) {
+        var element = document.getElementById(field.name);
+        element.value = localStorage[field.name];
+        element.disabled = !useAnki;
+      });
+    },
+    readValues: function() {
+      var element = document.getElementById('use_anki');
+      if (element.checked) {
+        localStorage['use_anki'] = true;
+      } else {
+        delete localStorage['use_anki'];
+      }
+      self.fields.forEach(function(field) {
+        localStorage[field.name] = document.getElementById(field.name).value;
+      });
+    },
+    onLoad: function() {
+      // Set default values.
+      self.fields.forEach(function(field) {
+        if (localStorage[field.name] == undefined) {
+          localStorage[field.name] = field.default;
+        }
+      });
+      // Initialize elements.
+      self.updateElements();
+      // Set event handlers.
+      document.getElementById('use_anki').addEventListener('change', self.onChange);
+      self.fields.forEach(function(field) {
+        document.getElementById(field.name).addEventListener('change', self.onChange);
+      });
+    },
+    onChange: function() {
+      self.readValues();
+      self.updateElements();
     }
-  });
+  };
+  return self;
+})().init();
 
-  // Initialize elements.
-  updateElements();
+var _scopy = function(obj) {
+  var r = {};
+  for (var n in obj) r[n] = obj[n];
+  return r;
+};
 
-  // Set event handlers.
-  document.getElementById('use_anki').addEventListener('change', onChange);
-  fields.forEach(function(field) {
-    document.getElementById(field.name).addEventListener('change', onChange);
-  });
-});
+var Styles = (function createStyles() {
+  var self = {
+    key: 'chrodic_style',
+    fields: {
+      background_color : '0,0,0,0.7',
+      foreground_color : '255,255,255,1',
+      enable_fade      : true,
+      fade_timespan    : 50,
+      font             : 'Hiragino Mincho Pro'
+    },
+    db: {},
+    init: function() {
+      window.addEventListener('load', self.onLoad);
+      return self;
+    },
+    onLoad: function() {
+      self.loadData();
+      self.updateElements();
+      for (var n in self.fields)
+        document.getElementById(n).addEventListener('change', self.onChange);
+      document.getElementById('style_set_default').addEventListener('click', self.setDefault);
+    },
+    loadData: function() {
+      self.db = (localStorage[self.key] === void(0) ?
+                 _scopy(self.fields) :
+                 JSON.parse(localStorage[self.key]));
+      self.saveData();
+    },
+    saveData: function() {
+      localStorage[self.key] = JSON.stringify(self.db);
+    },
+    updateElements: function() {
+      for (var n in self.db) {
+        var v  = self.db[n];
+        var el = document.getElementById(n);
+        if (typeof v === 'boolean') el.checked = v;
+        else                        el.value = v;
+      }
+    },
+    readValues: function() {
+      for (var n in self.db) {
+        var el = document.getElementById(n);
+        self.db[n] = (el.type === 'checkbox') ? el.checked : el.value;
+      }
+    },
+    onChange: function() {
+      self.readValues();
+      self.saveData();
+      self.updateElements();
+    },
+    setDefault: function() {
+      self.db = _scopy(self.fields);
+      self.saveData();
+      self.updateElements();
+    }
+  };
+  return self;
+})().init();
 
 function UpdateProgressBar(progress) {
   var str = Math.round(progress * 100) / 100 + '%';

@@ -1,4 +1,9 @@
-console.log('chrodic loaded!');
+var translationBox = null;
+
+chrome.runtime.sendMessage({action: "getStyleSettings"}, function(response) {
+  if (!response.data) return; // not setup yet.
+  translationBox = new TranslationBox(response.data);
+});
 
 var mouseMoveEvent;
 
@@ -87,7 +92,6 @@ var REWRITE_RULES = [
    });
 })();
 
-var translationBox = new TranslationBox;
 var previousWord = '';
 
 function redrawTranslationBox() {
@@ -113,7 +117,7 @@ function redrawTranslationBox() {
 var lastScrollTimeStamp = 0;
 
 document.addEventListener('scroll', function(event) {
-  if (!translationBox.Enabled()) return;
+  if (!translationBox || !translationBox.Enabled()) return;
 
   // Clear translation box.
   translationBox.Fadeout();
@@ -125,6 +129,8 @@ document.addEventListener('scroll', function(event) {
 var st;
 
 document.addEventListener('mousemove', function(event) {
+  if (!translationBox) return;
+
   // Store event to obtain mouse location.
   mouseMoveEvent = event;
 
@@ -155,7 +161,7 @@ document.addEventListener('mousemove', function(event) {
 }, false);
 
 document.addEventListener('mouseleave', function(event) {
-  if (!translationBox.Enabled()) return;
+  if (!translationBox || !translationBox.Enabled()) return;
 
   // Clear translation box.
   translationBox.Fadeout();
@@ -167,6 +173,8 @@ document.addEventListener('mouseleave', function(event) {
 var enableTimeout;
 
 document.addEventListener('mousedown', function(event) {
+  if (!translationBox) return;
+
   if (translationBox.Enabled()) {
     translationBox.SetEnabled(false);
     translationBox.Fadeout();
@@ -188,7 +196,7 @@ document.addEventListener('mouseup', function(event) {
 });
 
 document.addEventListener('keydown', function(event) {
-  if (!translationBox.Enabled()) return;
+  if (!translationBox || !translationBox.Enabled()) return;
   var kc = event.keyCode;
   // 49 == '1', 57 == '9'
   if (kc < 49 || 57 < kc) return;

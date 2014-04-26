@@ -1,21 +1,36 @@
-function TranslationBox() {
+function TranslationBox(style) {
+
   this.div = document.createElement('div');
-  this.opacity = 0;
   this.enabled = false;
-  with (this.div.style) {
-    zIndex = 2147483647;
-    position = 'absolute';
-    background = '#000000';
-    color = '#ffffff';
-    fontFamily = 'Hiragino Mincho Pro';
-    fontSize = '11px';
-    opacity = '0';
-    textAlign = 'left';
-    display = 'block';
-    borderRadius = '5px';
-    lineHeight = 'normal';
-    webkitFontSmoothing = 'auto';
+  this.styles = style;
+
+  if (this.styles.enable_fade) {
+    this.opacity = 0;
+    this.opacity_interval = 10; // ms
+    this.opacity_max = 100;
+    this.opacity_step = (this.opacity_max / (this.styles.fade_timespan / this.opacity_interval));
   }
+
+  with (this.div.style) {
+    zIndex              = 2147483647;
+    position            = 'absolute';
+    background          = 'rgba(' + this.styles.background_color + ')';
+    color               = 'rgba(' + this.styles.foreground_color + ')';
+    fontFamily          = this.styles.font;
+    fontSize            = '100%';
+    lineHeight          = 'normal';
+    textAlign           = 'left';
+    borderRadius        = '5px';
+    padding             = '8px';
+    webkitFontSmoothing = 'auto';
+    if (this.styles.enable_fade) {
+      opacity           = '0';
+      display           = 'block';
+    } else {
+      display           = 'none';
+    }
+  }
+
   document.body.appendChild(this.div);
 }
 
@@ -29,31 +44,39 @@ TranslationBox.prototype.SetEnabled = function(enabled) {
 
 TranslationBox.prototype.Fadein = function() {
   var self = this;
-  clearInterval(self.fadeinSt);
-  clearInterval(self.fadeoutSt);
-  self.fadeinSt = setInterval(function() {
-    self.div.style.opacity = self.opacity / 100;
-    if (self.opacity == 75) {
-      clearInterval(self.fadeinSt);
-    } else {
-      self.opacity += 5;
-    }
-  }, 10);
+  if (self.styles.enable_fade) {
+    clearInterval(self.fadeinSt);
+    clearInterval(self.fadeoutSt);
+    self.fadeinSt = setInterval(function() {
+      self.div.style.opacity = self.opacity / 100;
+      if (self.opacity == self.opacity_max) {
+        clearInterval(self.fadeinSt);
+      } else {
+        self.opacity += self.opacity_step;
+      }
+    }, self.opacity_interval);
+  } else {
+    self.div.style.display = 'block';
+  }
 };
 
 TranslationBox.prototype.Fadeout = function() {
   var self = this;
-  clearInterval(self.fadeoutSt);
-  clearInterval(self.fadeinSt);
-  self.fadeoutSt = setInterval(function() {
-    self.div.style.opacity = self.opacity / 100;
-    if (self.opacity == 0) {
-      self.div.innerHTML = '';
-      clearInterval(self.fadeoutSt);
-    } else {
-      self.opacity -= 5;
-    }
-  }, 10);
+  if (self.styles.enable_fade) {
+    clearInterval(self.fadeoutSt);
+    clearInterval(self.fadeinSt);
+    self.fadeoutSt = setInterval(function() {
+      self.div.style.opacity = self.opacity / 100;
+      if (self.opacity == 0) {
+        self.div.innerHTML = '';
+        clearInterval(self.fadeoutSt);
+      } else {
+        self.opacity -= self.opacity_step;
+      }
+    }, self.opacity_interval);
+  } else {
+    self.div.style.display = 'none';
+  }
 };
 
 TranslationBox.prototype.SetContent = function(results) {
@@ -68,7 +91,7 @@ TranslationBox.prototype.SetContent = function(results) {
   for (var i = 0; i < this.content.length; ++i) {
     var c = this.content[i];
     this.div.innerHTML +=
-    ('<span style="font-size:14px;">' + (i + 1) + '. ' + c.word +
+    ('<span style="font-size:100%;">' + (i + 1) + '. ' + c.word +
      '</span>\n<div style="margin:5px;">' + c.translation + '</div>').
       replace(/\n/g, '<br />');
   }

@@ -122,6 +122,10 @@ function onMessage(request, sender, callback) {
   case 'addToAnki':
     addToAnki(request.entry, callback);
     return true;
+  case 'getStyleSettings':
+    var cs = localStorage['chrodic_style'];
+    callback({data: cs ? JSON.parse(cs) : void(0)});
+    break;
   }
   return false;
 }
